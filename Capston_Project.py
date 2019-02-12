@@ -10,7 +10,7 @@
 # ## Exploring the Data
 # loading necessary Python libraries and loading the Admission_Predict data.
 
-# In[582]:
+# In[94]:
 
 
 # Import libraries necessary for this project
@@ -33,7 +33,7 @@ display(data.head(n=10))
 print ("dataset has {} samples with {} features each.".format(*data.shape))
 
 
-# In[583]:
+# In[95]:
 
 
 # drop the first column the serial numbers which is useless in making prediction
@@ -41,16 +41,16 @@ data= data.drop('Serial_No',1)
 data
 
 
-# In[584]:
+# In[96]:
 
 
 n_records = data.describe()
 n_records
 
 
-# from the avove table, we can see the average of chance of admission to the uni
+# from the above table, we can see the average of chance of admission to the university is 0.72
 
-# In[585]:
+# In[97]:
 
 
 data.info()
@@ -58,7 +58,7 @@ data.info()
 
 # ^ from the above result, we noticed that there are no missing values in the dataset which is a plus point for us as we do not need to worry about dealing with missing values.
 
-# In[586]:
+# In[98]:
 
 
 print('Mean CGPA Score is :',int(data['CGPA'].mean()))
@@ -70,7 +70,7 @@ print('Mean University rating is :',int(data['University_Rating'].mean()))
 
 # ####  correlations between the features and the chance of admission to the university
 
-# In[587]:
+# In[99]:
 
 
 # Heat map gives a good pictorial representation of the correlation of features to our target value chance of admit to university.
@@ -79,7 +79,16 @@ fig.set_size_inches(10,10)
 fig=sns.heatmap(data.corr(),annot=True,cmap='YlGnBu',linewidths=1,linecolor='k',square=True,mask=False, vmin=-1, vmax=1,cbar_kws={"orientation": "vertical"},cbar=True)
 
 
-# In[588]:
+# In[100]:
+
+
+#get the correlation value of each featur with addmission chance
+correlation =data.corr()['ChanceOfAdmit']
+# Print the correlations
+print(correlation)
+
+
+# In[101]:
 
 
 sns.pairplot(data,vars = ['GRE_Score','TOEFL_Score','University_Rating','SOP','LOR','CGPA','Research','ChanceOfAdmit'],
@@ -89,7 +98,7 @@ sns.pairplot(data,vars = ['GRE_Score','TOEFL_Score','University_Rating','SOP','L
 # The most striking insight for me would be the fact that though research is not highly correlated with the chances of admission, having done research leads to better GRE and TOEFL score which have high correlation with the chances of admission.
 # I draw a graph that show the impact of research with getting high GRE score and TOFEL score
 
-# In[589]:
+# In[102]:
 
 
 # add SNS plot here with hue = 'Research'
@@ -102,7 +111,7 @@ plt.title('Impact of Research')
 plt.show()
 
 
-# In[590]:
+# In[103]:
 
 
 # add SNS plot here with hue = 'Research'
@@ -115,7 +124,7 @@ plt.title('Impact of Research')
 plt.show()
 
 
-# In[591]:
+# In[104]:
 
 
 # data = df.reindex(columns=['GRE_Score', 'TOEFL_Score', 'University_Rating', 'SOP', 'LOR', 'CGPA', 'Research', 'Chance_of_Admit'])
@@ -131,7 +140,7 @@ data[data['ChanceOfAdmit'] >= 0.72].shape[0]
 # The percentage of individuals having chance admit more than 72% , 'greater_percent'.
 # 
 
-# In[615]:
+# In[105]:
 
 
 #  Total number of records
@@ -153,12 +162,11 @@ print("Percentage of individuals having chanceof admission to the university mor
 
 
 # ## Preparing and preprocessing the Data
-# 
-# Before data can be used as input for machine learning algorithms, it often must be cleaned, formatted, and restructured. Fortunately, for this dataset, there are no invalid or missing entries we must deal with, however, there are some qualities about certain features that must be adjusted.
+#  Fortunately, for this dataset, there are no invalid or missing entries we must deal with, however, there are some qualities about certain features that must be adjusted.
 
 # #### shuffle and split data into features and target label 
 
-# In[616]:
+# In[106]:
 
 
 # Split the data into features and target label
@@ -167,9 +175,8 @@ feature_raw= data.drop('ChanceOfAdmit', axis = 1)
 
 
 # #### Normalizing Numerical Features
-# it is often good practice to perform some type of scaling on numerical features. Applying a scaling to the data does not change the shape of each feature's distribution, however, normalization ensures that each feature is treated equally when applying supervised learners.
 
-# In[617]:
+# In[107]:
 
 
 # Import sklearn.preprocessing.StandardScaler
@@ -184,30 +191,20 @@ for i in num_vars:
 data
 
 
-# In[618]:
+# In[108]:
 
 
 features_final = pd.get_dummies(feature_raw)
-
-#  Encode the 'chanceAdmit_raw' data to numerical values
+ #Modify column data in dataframe 
+# Replace value>=0.72 into 1 
+# Replace value<0.72 into 0
 chanceAdmit = chanceAdmit_raw.apply(lambda l: 0 if l < 0.72 else 1)
-
-# Print the number of features after one-hot encoding
-encoded = list(features_final.columns)
-print("{} total features after one-hot encoding.".format(len(encoded)))
-
-# Uncomment the following line to see the encoded feature names
-count=0
-for i in chanceAdmit:
-    if i ==1:
-        count +=1
-print("number of chance admission= {}" .format (count))
 
 
 # #### split the data into training and testing sets
 # Now all numerical features have been normalized. As always, I split the data (both features and their labels) into training and test sets. 80% of the data will be used for training and 20% for testing.
 
-# In[619]:
+# In[109]:
 
 
 # Import train_test_split
@@ -228,8 +225,16 @@ print("Testing set has {} samples.".format(X_test.shape[0]))
 
 # #### Creating a Training and Predicting Pipeline 
 #  I create a training and predicting pipeline that allows to quickly and effectively train models using various sizes of training data and perform predictions on the testing data. I also calculat the training and prediction time. also calculate the traing and testing accuracy, as well as the f-score of training and testing. 
+#  
+#   inputs in training-prediction function:
+#        - learner: the learning algorithm to be trained and predicted on
+#        - sample_size: the size of samples (number) to be drawn from training set
+#        - X_train: features training set
+#        - y_train: chance-of-Admission training set
+#        - X_test: features testing set
+#        - y_test: chance-of-Admission testing set
 
-# In[620]:
+# In[110]:
 
 
 #  Import two metrics from sklearn - fbeta_score and accuracy_score
@@ -237,19 +242,9 @@ from sklearn.metrics import fbeta_score
 from sklearn.metrics import accuracy_score
 
 def train_predict(learner, sample_size, X_train, y_train, X_test, y_test): 
-    '''
-    inputs:
-       - learner: the learning algorithm to be trained and predicted on
-       - sample_size: the size of samples (number) to be drawn from training set
-       - X_train: features training set
-       - y_train: chance-of-Admission training set
-       - X_test: features testing set
-       - y_test: chance-of-Admission testing set
-    '''
-    
     results = {}
     
-    # Fit the learner to the training data using slicing with 'sample_size' using .fit(training_features[:], training_labels[:])
+    # Fit the learner to the training data using slicing with 'sample_size'
     start = time() # Get start time
     learner = learner.fit(X_train[:sample_size],y_train[:sample_size])
     end = time() # Get end time
@@ -288,7 +283,7 @@ def train_predict(learner, sample_size, X_train, y_train, X_test, y_test):
 
 # #### Initial Model Evaluation
 
-# In[631]:
+# In[111]:
 
 
 # Import the three supervised learning models from sklearn
@@ -333,7 +328,7 @@ for clf in [clf_A, clf_B, clf_C]:
 # 
 # Use grid search (GridSearchCV) with at least one important parameter.
 
-# In[623]:
+# In[112]:
 
 
 #Import 'GridSearchCV', 'make_scorer', and any other necessary libraries
@@ -346,10 +341,10 @@ from sklearn.tree import DecisionTreeClassifier
 model = RandomForestClassifier(random_state=42)
 
 # Create the parameters list to tune, using a dictionary.
-parameters = {"n_estimators":[500, 1000] }
+parameters = {"n_estimators":[16, 32, 64, 100, 200,500,1000,2000] }
 
 # Make an fbeta_score scoring object using make_scorer()
-scorer = make_scorer(fbeta_score, beta = 0.5 )
+scorer = make_scorer(fbeta_score, beta = 0.9)
 
 # Perform grid search on the classifier using 'scorer' as the scoring method using GridSearchCV()
 grid_obj = GridSearchCV(model, parameters, scorer)
@@ -379,11 +374,11 @@ print("Final F-score on the testing data: {:.4f}".format(fbeta_score(y_test, bes
 # 
 # |     Metric     | Unoptimized Model | Optimized Model |
 # | :------------: | :---------------: | :-------------: | 
-# | Accuracy Score |    0.8600         |   0.8600        |
-# | F-score        |    0.8590         |   0.8676        |
+# | Accuracy Score |    0.8600         |   0.8700        |
+# | F-score        |    0.8590         |   0.8837       |
 # 
 
-# as we see, the accuracy of unoptimal and optimal modal is the same to each other but f-score is close to each other. the deffrintiation between unoptimal and optimal modal is 0.0086 for f-score, so the two models are good but the optimal model is better. 
+# as we see,  the accuracy of unoptimal and optimal modal is so close to each other as well as f-score.  the differentiation between unoptimal and optimal modal is 0.01 for the accuracy and 0.0247 for f-score, so the two models are good but the optimal model is better. 
 # ___
 
 # ## Feature Importance
@@ -393,37 +388,7 @@ print("Final F-score on the testing data: {:.4f}".format(fbeta_score(y_test, bes
 # 
 # #### Extracting Feature Importance
 
-# In[606]:
-
-
-
-def plot_imporatances(importances):
- 
-    indices = np.argsort(importances)
-
-    plt.title('Feature Importances')
-    plt.barh(range(len(indices)), importances[indices], color='g', align='center')
-    plt.yticks(range(len(indices)), [num_vars[i] for i in indices])
-    plt.xlabel('Relative Importance')
-    plt.show()
-
-
-# In[603]:
-
-
-def plot_imporatances(importances):
- 
-    indices = np.argsort(importances)
-
-    plt.title('Feature Importances')
-    plt.barh(range(len(indices)), importances[indices], color='g', align='center')
-    plt.yticks(range(len(indices)-1), [num_vars[i] for i in indices])
-    plt.xlabel('Relative Importance')
-    plt.show()
-    indices
-
-
-# In[626]:
+# In[116]:
 
 
 
@@ -433,24 +398,25 @@ lr_model = RandomForestClassifier().fit(X_train, y_train)
 importances = lr_model.feature_importances_ 
 
 
-# In[628]:
-
-
 # Plot
-plot_imporatances(importances)
+vs.feature_plot(importances, X_train, y_train)
+featues_name= data.columns
+print (featues_name)
 
+
+# from the above, we notice that the CGPA, TOFEL_score, GRE_score, LOR and  University_Rating are the most important features in admission dataset.
 
 # ## Conclusion
 
-# In[632]:
+# In[118]:
 
 
 # Import functionality for cloning a model
 from sklearn.base import clone
 
 # Reduce the feature space
-X_train_reduced = X_train[X_train.columns.values[(np.argsort(importances)[::-1])[:5]]]
-X_test_reduced = X_test[X_test.columns.values[(np.argsort(importances)[::-1])[:5]]]
+X_train_reduced = X_train[X_train.columns.values[(np.argsort(importances)[::-1])[:4]]]
+X_test_reduced = X_test[X_test.columns.values[(np.argsort(importances)[::-1])[:4]]]
 
 # Train on the "best" model found from grid search earlier
 clf = (clone(best_clf)).fit(X_train_reduced, y_train)
